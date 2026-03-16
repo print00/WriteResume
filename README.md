@@ -7,7 +7,7 @@ A full-stack resume builder for creating ATS-optimized, single-page resumes with
 - Node.js 18 or newer
 - npm
 - LibreOffice installed and available as `soffice` on your system path
-- Anthropic API key
+- Google Gemini API key
 
 ## Install
 
@@ -23,10 +23,10 @@ npm install
 cp server/.env.example server/.env
 ```
 
-3. Add your Anthropic API key to `server/.env`:
+3. Add your Gemini API key to `server/.env`:
 
 ```bash
-ANTHROPIC_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
 PORT=3001
 CLIENT_ORIGIN=http://localhost:5173
 ```
@@ -82,7 +82,7 @@ This repo includes [render.yaml](/Users/shushilkarki/My-projects/WriteResume/ren
 ### Backend service
 
 - Render will build the Dockerfile in [server/Dockerfile](/Users/shushilkarki/My-projects/WriteResume/server/Dockerfile)
-- Set `ANTHROPIC_API_KEY`
+- Set `GEMINI_API_KEY`
 - Set `CLIENT_ORIGIN` to your Render frontend URL, for example `https://resume-builder-web.onrender.com`
 
 ### Frontend static site
@@ -100,8 +100,8 @@ This repo includes [render.yaml](/Users/shushilkarki/My-projects/WriteResume/ren
 ## Features
 
 - 7-step wizard form with progress tracking and responsive dark UI
-- AI-generated summary via `POST /api/ai/summary`
-- AI-enhanced work/project bullets via `POST /api/ai/bullets`
+- AI-generated summary via `POST /api/ai/summary` using Gemini
+- AI-enhanced work/project bullets via `POST /api/ai/bullets` using Gemini
 - ATS checklist and score calculated client-side
 - DOCX export via `POST /api/generate/docx`
 - PDF export via `POST /api/generate/pdf` using headless LibreOffice
