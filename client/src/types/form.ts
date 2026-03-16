@@ -1,4 +1,4 @@
-import type { ResumeData } from "@resume-builder/shared";
+import type { ResumeData } from "./shared";
 
 export interface SkillCategory {
   id: string;

@@ -1,5 +1,10 @@
 import { saveAs } from "file-saver";
-import type { BulletEnhanceRequest, BulletsResponse, ResumeData, SummaryResponse } from "@resume-builder/shared";
+import type {
+  BulletEnhanceRequest,
+  BulletsResponse,
+  ResumeData,
+  SummaryResponse,
+} from "../types/shared";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 

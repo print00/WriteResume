@@ -4,15 +4,16 @@ const METRIC_PATTERN = /(\d+%|\d+x|\$\d+|\d+[KM]|\d+ms)/i;
 
 export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
   const totalBullets = values.experience.reduce(
-    (count: number, item) => count + item.bullets.filter((bullet: string) => bullet.trim()).length,
+    (count: number, item: ResumeFormData["experience"][number]) =>
+      count + item.bullets.filter((bullet: string) => bullet.trim()).length,
     0,
   );
   const allBullets = [
-    ...values.experience.flatMap((item) => item.bullets),
-    ...values.projects.flatMap((item) => item.bullets),
+    ...values.experience.flatMap((item: ResumeFormData["experience"][number]) => item.bullets),
+    ...values.projects.flatMap((item: ResumeFormData["projects"][number]) => item.bullets),
   ];
   const skillCategoriesWithContent = values.skills.filter(
-    (item) => item.category.trim() && item.values.trim(),
+    (item: ResumeFormData["skills"][number]) => item.category.trim() && item.values.trim(),
   ).length;
 
   return [
@@ -36,7 +37,10 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     },
     {
       label: "At least 2 work experiences",
-      passed: values.experience.filter((item) => item.company.trim() || item.title.trim()).length >= 2,
+      passed:
+        values.experience.filter(
+          (item: ResumeFormData["experience"][number]) => item.company.trim() || item.title.trim(),
+        ).length >= 2,
       points: 20,
     },
     {
@@ -51,7 +55,7 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     },
     {
       label: "Education section included",
-      passed: values.education.some((item) => item.school.trim()),
+      passed: values.education.some((item: ResumeFormData["education"][number]) => item.school.trim()),
       points: 10,
     },
     {
@@ -66,7 +70,7 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     },
     {
       label: "Projects section included",
-      passed: values.projects.some((item) => item.name.trim()),
+      passed: values.projects.some((item: ResumeFormData["projects"][number]) => item.name.trim()),
       points: 5,
     },
   ];

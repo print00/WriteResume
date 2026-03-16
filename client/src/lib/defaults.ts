@@ -88,25 +88,30 @@ export function toResumePayload(values: ResumeFormData): ResumeApiPayload {
       portfolio: values.contact.portfolio?.trim() || undefined,
     },
     summary: values.summary.trim(),
-    experience: values.experience.map((item) => ({
+    experience: values.experience.map((item: ResumeFormData["experience"][number]) => ({
       ...item,
       bullets: item.bullets.map((bullet: string) => bullet.trim()).filter(Boolean),
     })),
-    education: values.education.map((item) => ({
+    education: values.education.map((item: ResumeFormData["education"][number]) => ({
       ...item,
       gpa: item.gpa?.trim() || undefined,
       honors: item.honors?.trim() || undefined,
     })),
-    skills: values.skills.reduce<Record<string, string>>((accumulator, item) => {
+    skills: values.skills.reduce<Record<string, string>>(
+      (accumulator, item: ResumeFormData["skills"][number]) => {
       if (item.category.trim() && item.values.trim()) {
         accumulator[item.category.trim()] = item.values.trim();
       }
       return accumulator;
-    }, {}),
-    projects: values.projects.map((item) => ({
+      },
+      {},
+    ),
+    projects: values.projects.map((item: ResumeFormData["projects"][number]) => ({
       ...item,
       bullets: item.bullets.map((bullet: string) => bullet.trim()).filter(Boolean),
     })),
-    certifications: values.certifications.map((item) => item.value.trim()).filter(Boolean),
+    certifications: values.certifications
+      .map((item: ResumeFormData["certifications"][number]) => item.value.trim())
+      .filter(Boolean),
   };
 }
