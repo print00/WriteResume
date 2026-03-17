@@ -77,7 +77,10 @@ export default function App() {
     () => normalizeResumeFormData(values as Partial<ResumeFormData> | undefined),
     [values],
   );
-  const { score, checklist } = useMemo(() => getAtsScore(safeValues), [safeValues]);
+  const { score, checklist } = useMemo(
+    () => (currentStep === 6 ? getAtsScore(safeValues) : { score: 0, checklist: [] }),
+    [currentStep, safeValues],
+  );
   const scoreTone =
     score >= 80 ? "text-success" : score >= 60 ? "text-warn" : "text-danger";
 
