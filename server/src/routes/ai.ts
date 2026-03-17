@@ -11,8 +11,16 @@ function extractText(response: { text?: string | undefined }) {
   return response.text?.trim() ?? "";
 }
 
+function stripCodeFences(text: string) {
+  return text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+}
+
 function parseBulletArray(text: string, originals: string[]) {
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  const normalized = stripCodeFences(text);
+  const jsonMatch = normalized.match(/\[[\s\S]*\]/);
 
   if (jsonMatch) {
     try {
@@ -28,10 +36,12 @@ function parseBulletArray(text: string, originals: string[]) {
     }
   }
 
-  return text
+  return normalized
     .split("\n")
     .map((line: string) =>
       line
+        .replace(/^```(?:json)?$/i, "")
+        .replace(/^[[\],"]+$/, "")
         .replace(/^\s*(?:[-*•]|\d+[\).\s-])\s*/, "")
         .trim(),
     )
