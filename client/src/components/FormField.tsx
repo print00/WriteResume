@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type Ref,
+  type TextareaHTMLAttributes,
+} from "react";
 import clsx from "clsx";
 
 interface BaseProps {
@@ -16,7 +21,10 @@ type TextareaProps = BaseProps &
     as: "textarea";
   };
 
-export default function FormField(props: InputProps | TextareaProps) {
+const FormField = forwardRef<
+  HTMLInputElement | HTMLTextAreaElement,
+  InputProps | TextareaProps
+>(function FormField(props, ref) {
   const { label, error, className, ...rest } = props;
   const sharedClasses = clsx(
     "w-full rounded-xl border border-line bg-slate-950/50 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent focus:ring-2 focus:ring-accent/30",
@@ -29,11 +37,21 @@ export default function FormField(props: InputProps | TextareaProps) {
     <label className="block space-y-2">
       <span className="text-sm font-medium text-slate-200">{label}</span>
       {props.as === "textarea" ? (
-        <textarea className={sharedClasses} {...textareaProps} />
+        <textarea
+          className={sharedClasses}
+          ref={ref as Ref<HTMLTextAreaElement>}
+          {...textareaProps}
+        />
       ) : (
-        <input className={sharedClasses} {...inputProps} />
+        <input
+          className={sharedClasses}
+          ref={ref as Ref<HTMLInputElement>}
+          {...inputProps}
+        />
       )}
       {error ? <span className="text-xs text-danger">{error}</span> : null}
     </label>
   );
-}
+});
+
+export default FormField;
