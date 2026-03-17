@@ -13,6 +13,7 @@ export default function Button({
   loading,
   variant = "primary",
   disabled,
+  type = "button",
   ...props
 }: PropsWithChildren<ButtonProps>) {
   return (
@@ -27,6 +28,7 @@ export default function Button({
         className,
       )}
       disabled={disabled || loading}
+      type={type}
       {...props}
     >
       {loading ? <Spinner /> : null}

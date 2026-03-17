@@ -9,6 +9,7 @@ import FormField from "./components/FormField";
 import InlineErrorBanner from "./components/InlineErrorBanner";
 import SectionCard from "./components/SectionCard";
 import StepHeader from "./components/StepHeader";
+import BrandLogo from "./components/BrandLogo";
 
 const steps = [
   "Contact",
@@ -133,14 +134,17 @@ export default function App() {
 
   return (
     <main className="min-h-screen px-4 py-8 text-slate-100 md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <form
+        className="mx-auto max-w-6xl space-y-6"
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+      >
         <header className="space-y-3">
-          <div className="inline-flex rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs uppercase tracking-[0.28em] text-accent">
-            Resume Builder
-          </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-4xl font-semibold tracking-tight text-white">Build a FAANG-ready resume</h1>
+              <BrandLogo />
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white">Build a FAANG-ready resume</h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
                 Structured drafting, AI-assisted polish, and export to ATS-friendly DOCX or PDF in one pass.
               </p>
@@ -524,7 +528,7 @@ export default function App() {
             </Button>
           </div>
         </footer>
-      </div>
+      </form>
     </main>
   );
 }
