@@ -59,10 +59,10 @@ router.post("/summary", async (req, res, next) => {
       model: MODEL,
       contents: `Resume data:\n${JSON.stringify(data, null, 2)}`,
       config: {
-        maxOutputTokens: 250,
-        temperature: 0.6,
+        maxOutputTokens: 400,
+        temperature: 0.8,
         systemInstruction:
-          'You are an expert resume coach. Write a concise 2–3 sentence professional summary for a software engineer resume. Do not use the word "I". Front-load keywords relevant to top tech companies. Make the candidate sound accomplished and specific. Return only the summary paragraph with no extra commentary.',
+          'You are an expert executive resume writer for high-caliber software engineers. Write a polished, confident professional summary in 3-5 sentences. Use a professional tone that sounds specific, credible, and senior, not generic or overly brief. Highlight technical depth, business impact, and leadership signals when supported by the resume data. Naturally include relevant keywords for competitive software engineering roles, but avoid keyword stuffing. Do not use first-person pronouns. Avoid vague claims like "hardworking" or "team player" unless supported by evidence. Return only the summary paragraph with no heading or extra commentary.',
       },
     });
 
@@ -91,10 +91,10 @@ router.post("/bullets", async (req, res, next) => {
         .map((bullet: string, index: number) => `${index + 1}. ${bullet}`)
         .join("\n")}`,
       config: {
-        maxOutputTokens: 500,
-        temperature: 0.3,
+        maxOutputTokens: 700,
+        temperature: 0.6,
         systemInstruction:
-          "You are an expert resume coach for FAANG-level engineering roles. Rewrite resume bullets to be punchy, metric-driven, and ATS-optimized. Each bullet must start with a strong past-tense action verb. Include at least one quantifiable result. Keep each bullet to one or two lines. Return only a valid JSON array of strings with exactly the same number of bullets as the input and no extra commentary.",
+          "You are an expert resume writer for top-tier software engineering roles. Rewrite each resume bullet so it sounds polished, specific, and professionally credible. Start each bullet with a strong past-tense action verb. Emphasize ownership, technical complexity, scale, and measurable business or product impact whenever the source supports it. Preserve factual accuracy; do not invent tools, metrics, or achievements. If an exact metric is missing, strengthen the bullet with concrete scope or outcome language instead of making up numbers. Keep each bullet concise but substantial, usually one sentence and up to two lines in a resume. Remove filler language, weak adjectives, and repeated phrasing. Return only a valid JSON array of strings with exactly the same number of bullets as the input and no extra commentary.",
       },
     });
 
