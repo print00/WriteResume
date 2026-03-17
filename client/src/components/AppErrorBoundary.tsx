@@ -7,6 +7,7 @@ interface AppErrorBoundaryProps {
 
 interface AppErrorBoundaryState {
   hasError: boolean;
+  errorMessage: string | null;
 }
 
 export default class AppErrorBoundary extends Component<
@@ -15,6 +16,7 @@ export default class AppErrorBoundary extends Component<
 > {
   state: AppErrorBoundaryState = {
     hasError: false,
+    errorMessage: null,
   };
 
   static getDerivedStateFromError() {
@@ -23,6 +25,7 @@ export default class AppErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("WriteResume UI crash:", error, info);
+    this.setState({ errorMessage: error.message });
   }
 
   render() {
@@ -36,6 +39,11 @@ export default class AppErrorBoundary extends Component<
               page to recover. If this keeps happening, the browser console will now
               show the exact crash.
             </p>
+            {this.state.errorMessage ? (
+              <pre className="mt-4 overflow-x-auto rounded-2xl border border-line bg-slate-950/70 p-4 text-xs text-rose-200">
+                {this.state.errorMessage}
+              </pre>
+            ) : null}
           </div>
         </main>
       );
