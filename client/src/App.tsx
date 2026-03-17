@@ -42,6 +42,7 @@ export default function App() {
     setValue,
   } = useForm<ResumeFormData>({
     defaultValues,
+    shouldUnregister: false,
   });
 
   const { fields: experienceFields, append: appendExperience, remove: removeExperience } = useFieldArray({
@@ -182,7 +183,7 @@ export default function App() {
 
         <InlineErrorBanner message={errorMessage} />
 
-        <div key={currentStep} className="animate-fade-slide">
+        <div className="animate-fade-slide">
           {currentStep === 0 ? (
             <SectionCard title="Contact Information" subtitle="Start with the essentials recruiters look for first.">
               <div className="grid gap-4 md:grid-cols-2">
