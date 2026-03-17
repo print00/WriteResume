@@ -11,6 +11,7 @@ import {
   createProject,
   createSkill,
   toResumePayload,
+  cleanText,
 } from "./lib/defaults";
 import { getAtsScore } from "./lib/ats";
 import { downloadResume, enhanceBullets, generateSummary } from "./lib/api";
@@ -252,7 +253,7 @@ export default function App() {
                               "experience",
                               index,
                               `${watchedExperience[index]?.title || "Role"} at ${watchedExperience[index]?.company || "Company"}`,
-                              watchedExperience[index]?.bullets.filter((bullet: string) => bullet.trim()) || [],
+                              watchedExperience[index]?.bullets.filter((bullet: string) => cleanText(bullet)) || [],
                             )
                           }
                         >
@@ -416,7 +417,7 @@ export default function App() {
                               "projects",
                               index,
                               `Project: ${watchedProjects[index]?.name || "Untitled"}`,
-                              watchedProjects[index]?.bullets.filter((bullet: string) => bullet.trim()) || [],
+                              watchedProjects[index]?.bullets.filter((bullet: string) => cleanText(bullet)) || [],
                             )
                           }
                         >

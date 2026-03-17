@@ -1,11 +1,12 @@
 import type { ResumeFormData, AtsChecklistItem } from "../types/form";
+import { cleanText } from "./defaults";
 
 const METRIC_PATTERN = /(\d+%|\d+x|\$\d+|\d+[KM]|\d+ms)/i;
 
 export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
   const totalBullets = values.experience.reduce(
     (count: number, item: ResumeFormData["experience"][number]) =>
-      count + item.bullets.filter((bullet: string) => bullet.trim()).length,
+      count + item.bullets.filter((bullet: string) => cleanText(bullet)).length,
     0,
   );
   const allBullets = [
@@ -13,33 +14,34 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     ...values.projects.flatMap((item: ResumeFormData["projects"][number]) => item.bullets),
   ];
   const skillCategoriesWithContent = values.skills.filter(
-    (item: ResumeFormData["skills"][number]) => item.category.trim() && item.values.trim(),
+    (item: ResumeFormData["skills"][number]) => cleanText(item.category) && cleanText(item.values),
   ).length;
 
   return [
     {
       label: "Name + email + phone present",
       passed:
-        Boolean(values.contact.name.trim()) &&
-        Boolean(values.contact.email.trim()) &&
-        Boolean(values.contact.phone.trim()),
+        Boolean(cleanText(values.contact.name)) &&
+        Boolean(cleanText(values.contact.email)) &&
+        Boolean(cleanText(values.contact.phone)),
       points: 10,
     },
     {
       label: "LinkedIn included",
-      passed: Boolean(values.contact.linkedin?.trim()),
+      passed: Boolean(cleanText(values.contact.linkedin)),
       points: 5,
     },
     {
       label: "Summary is at least 100 characters",
-      passed: values.summary.trim().length >= 100,
+      passed: cleanText(values.summary).length >= 100,
       points: 10,
     },
     {
       label: "At least 2 work experiences",
       passed:
         values.experience.filter(
-          (item: ResumeFormData["experience"][number]) => item.company.trim() || item.title.trim(),
+          (item: ResumeFormData["experience"][number]) =>
+            cleanText(item.company) || cleanText(item.title),
         ).length >= 2,
       points: 20,
     },
@@ -55,7 +57,9 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     },
     {
       label: "Education section included",
-      passed: values.education.some((item: ResumeFormData["education"][number]) => item.school.trim()),
+      passed: values.education.some(
+        (item: ResumeFormData["education"][number]) => cleanText(item.school),
+      ),
       points: 10,
     },
     {
@@ -65,12 +69,14 @@ export function getAtsChecklist(values: ResumeFormData): AtsChecklistItem[] {
     },
     {
       label: "GitHub or portfolio link included",
-      passed: Boolean(values.contact.github?.trim() || values.contact.portfolio?.trim()),
+      passed: Boolean(cleanText(values.contact.github) || cleanText(values.contact.portfolio)),
       points: 5,
     },
     {
       label: "Projects section included",
-      passed: values.projects.some((item: ResumeFormData["projects"][number]) => item.name.trim()),
+      passed: values.projects.some(
+        (item: ResumeFormData["projects"][number]) => cleanText(item.name),
+      ),
       points: 5,
     },
   ];

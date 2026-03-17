@@ -4,6 +4,10 @@ function makeId(prefix: string) {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function cleanText(value?: string | null) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export function createBullet() {
   return "";
 }
@@ -127,35 +131,37 @@ export function toResumePayload(values: ResumeFormData): ResumeApiPayload {
   return {
     contact: {
       ...values.contact,
-      linkedin: values.contact.linkedin?.trim() || undefined,
-      github: values.contact.github?.trim() || undefined,
-      portfolio: values.contact.portfolio?.trim() || undefined,
+      linkedin: cleanText(values.contact.linkedin) || undefined,
+      github: cleanText(values.contact.github) || undefined,
+      portfolio: cleanText(values.contact.portfolio) || undefined,
     },
-    summary: values.summary.trim(),
+    summary: cleanText(values.summary),
     experience: values.experience.map((item: ResumeFormData["experience"][number]) => ({
       ...item,
-      bullets: item.bullets.map((bullet: string) => bullet.trim()).filter(Boolean),
+      bullets: item.bullets.map((bullet: string) => cleanText(bullet)).filter(Boolean),
     })),
     education: values.education.map((item: ResumeFormData["education"][number]) => ({
       ...item,
-      gpa: item.gpa?.trim() || undefined,
-      honors: item.honors?.trim() || undefined,
+      gpa: cleanText(item.gpa) || undefined,
+      honors: cleanText(item.honors) || undefined,
     })),
     skills: values.skills.reduce<Record<string, string>>(
       (accumulator, item: ResumeFormData["skills"][number]) => {
-      if (item.category.trim() && item.values.trim()) {
-        accumulator[item.category.trim()] = item.values.trim();
-      }
-      return accumulator;
+        const category = cleanText(item.category);
+        const skillValues = cleanText(item.values);
+        if (category && skillValues) {
+          accumulator[category] = skillValues;
+        }
+        return accumulator;
       },
       {},
     ),
     projects: values.projects.map((item: ResumeFormData["projects"][number]) => ({
       ...item,
-      bullets: item.bullets.map((bullet: string) => bullet.trim()).filter(Boolean),
+      bullets: item.bullets.map((bullet: string) => cleanText(bullet)).filter(Boolean),
     })),
     certifications: values.certifications
-      .map((item: ResumeFormData["certifications"][number]) => item.value.trim())
+      .map((item: ResumeFormData["certifications"][number]) => cleanText(item.value))
       .filter(Boolean),
   };
 }
