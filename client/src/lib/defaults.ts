@@ -79,6 +79,50 @@ export const defaultValues: ResumeFormData = {
   certifications: [createCertification()],
 };
 
+export function normalizeResumeFormData(
+  values?: Partial<ResumeFormData>,
+): ResumeFormData {
+  return {
+    contact: {
+      ...defaultValues.contact,
+      ...(values?.contact ?? {}),
+    },
+    summary: values?.summary ?? defaultValues.summary,
+    experience:
+      values?.experience?.map((item, index) => ({
+        ...createExperience(),
+        ...(defaultValues.experience[index] ?? {}),
+        ...item,
+        bullets: item?.bullets ?? ["", "", ""],
+      })) ?? defaultValues.experience,
+    education:
+      values?.education?.map((item, index) => ({
+        ...createEducation(),
+        ...(defaultValues.education[index] ?? {}),
+        ...item,
+      })) ?? defaultValues.education,
+    skills:
+      values?.skills?.map((item, index) => ({
+        ...createSkill(),
+        ...(defaultValues.skills[index] ?? {}),
+        ...item,
+      })) ?? defaultValues.skills,
+    projects:
+      values?.projects?.map((item, index) => ({
+        ...createProject(),
+        ...(defaultValues.projects[index] ?? {}),
+        ...item,
+        bullets: item?.bullets ?? ["", "", ""],
+      })) ?? defaultValues.projects,
+    certifications:
+      values?.certifications?.map((item, index) => ({
+        ...createCertification(),
+        ...(defaultValues.certifications[index] ?? {}),
+        ...item,
+      })) ?? defaultValues.certifications,
+  };
+}
+
 export function toResumePayload(values: ResumeFormData): ResumeApiPayload {
   return {
     contact: {

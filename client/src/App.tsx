@@ -1,7 +1,17 @@
 import { useMemo, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { ResumeFormData } from "./types/form";
-import { defaultValues, createBullet, createCertification, createEducation, createExperience, createProject, createSkill, toResumePayload } from "./lib/defaults";
+import {
+  defaultValues,
+  normalizeResumeFormData,
+  createBullet,
+  createCertification,
+  createEducation,
+  createExperience,
+  createProject,
+  createSkill,
+  toResumePayload,
+} from "./lib/defaults";
 import { getAtsScore } from "./lib/ats";
 import { downloadResume, enhanceBullets, generateSummary } from "./lib/api";
 import Button from "./components/Button";
@@ -63,7 +73,10 @@ export default function App() {
   const [bulletLoadingKey, setBulletLoadingKey] = useState<string | null>(null);
   const [exportState, setExportState] = useState<ExportState>("idle");
 
-  const safeValues = (values ?? defaultValues) as ResumeFormData;
+  const safeValues = useMemo(
+    () => normalizeResumeFormData(values as Partial<ResumeFormData> | undefined),
+    [values],
+  );
   const { score, checklist } = useMemo(() => getAtsScore(safeValues), [safeValues]);
   const scoreTone =
     score >= 80 ? "text-success" : score >= 60 ? "text-warn" : "text-danger";
