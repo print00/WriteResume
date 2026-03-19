@@ -59,7 +59,7 @@ router.post("/summary", async (req, res, next) => {
       model: MODEL,
       contents: `Resume data:\n${JSON.stringify(data, null, 2)}`,
       config: {
-        maxOutputTokens: 400,
+        maxOutputTokens: 2000,
         temperature: 0.8,
         systemInstruction:
           'You are an expert executive resume writer for high-caliber software engineers. Write a polished, confident professional summary in 3-5 sentences. Use a professional tone that sounds specific, credible, and senior, not generic or overly brief. Highlight technical depth, business impact, and leadership signals when supported by the resume data. Naturally include relevant keywords for competitive software engineering roles, but avoid keyword stuffing. Do not use first-person pronouns. Avoid vague claims like "hardworking" or "team player" unless supported by evidence. Return only the summary paragraph with no heading or extra commentary.',
