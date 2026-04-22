@@ -11,29 +11,74 @@ export function stripCodeFences(text: string) {
     .trim();
 }
 
-export function parseJsonFromText<T>(text: string): T {
-  const normalized = stripCodeFences(text);
-  const firstBrace = normalized.indexOf("{");
-  const firstBracket = normalized.indexOf("[");
-  const start =
-    firstBrace === -1
-      ? firstBracket
-      : firstBracket === -1
-        ? firstBrace
-        : Math.min(firstBrace, firstBracket);
+function extractBalancedJsonSegment(text: string) {
+  const start = text.search(/[\[{]/);
 
   if (start === -1) {
-    throw new ApiError(502, "The AI service returned an unreadable response.");
+    return null;
   }
 
-  const candidate = normalized.slice(start);
+  const opening = text[start];
+  const closing = opening === "{" ? "}" : "]";
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === opening) {
+      depth += 1;
+      continue;
+    }
+
+    if (char === closing) {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, index + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+export function parseJsonFromText<T>(text: string): T {
+  const normalized = stripCodeFences(text);
+  const candidate = extractBalancedJsonSegment(normalized);
+
+  if (!candidate) {
+    throw new ApiError(502, "The AI service returned an unreadable response.");
+  }
 
   try {
     return JSON.parse(candidate) as T;
   } catch {
-    const objectMatch = normalized.match(/\{[\s\S]*\}$/);
-    const arrayMatch = normalized.match(/\[[\s\S]*\]$/);
-    const fallback = objectMatch?.[0] ?? arrayMatch?.[0];
+    const fallback = extractBalancedJsonSegment(
+      normalized.replace(/[“”]/g, '"').replace(/[‘’]/g, "'"),
+    );
     if (!fallback) {
       throw new ApiError(502, "The AI service returned invalid JSON.");
     }
