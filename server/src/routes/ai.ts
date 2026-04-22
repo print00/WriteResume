@@ -27,6 +27,68 @@ const upload = multer({
   },
 });
 
+function clampScore(value: number) {
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function fallbackResumeReview(resumeText: string): ResumeReviewResponse {
+  const lines = resumeText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const metricMatches = resumeText.match(/(\d+%|\d+x|\$\d+|\d+[KM]|\d+ms)/gi) ?? [];
+  const hasLinkedIn = /linkedin/i.test(resumeText);
+  const hasGithub = /github|portfolio/i.test(resumeText);
+  const hasEducation = /education|b\.s\.|bachelor|master|university|college/i.test(resumeText);
+  const experienceSignals = (
+    resumeText.match(/engineer|developer|intern|software|full-stack|backend|frontend/gi) ?? []
+  ).length;
+  const score =
+    (lines.length >= 12 ? 20 : 10) +
+    Math.min(metricMatches.length, 4) * 10 +
+    (hasLinkedIn ? 10 : 0) +
+    (hasGithub ? 10 : 0) +
+    (hasEducation ? 10 : 0) +
+    Math.min(experienceSignals, 3) * 10;
+
+  return {
+    score: clampScore(score),
+    overview:
+      "Generated a fallback review because the AI returned an unexpected format. The uploaded resume was still parsed successfully.",
+    strengths: [
+      hasEducation
+        ? "Education details are present, which helps ATS parsers classify academic background."
+        : "Resume text was uploaded successfully and can now be iterated on inside the builder.",
+      metricMatches.length > 0
+        ? "Includes quantified achievements, which improves recruiter scanability and ATS strength."
+        : "Has room to add quantified impact statements for stronger screening performance.",
+      hasLinkedIn || hasGithub
+        ? "Contains at least one external profile link that supports recruiter verification."
+        : "Could be improved by adding LinkedIn, GitHub, or portfolio links.",
+    ],
+    improvements: [
+      "Add more metrics, scope, or outcome language to experience bullets for stronger impact.",
+      "Tailor the summary and keywords to the target role before exporting the next resume version.",
+      "Ensure each experience entry starts with a strong action verb and one concrete result.",
+    ],
+    keywordGaps: [
+      "System design",
+      "Scalability",
+      "APIs",
+      "Cloud",
+    ],
+    sectionFeedback: [
+      "Review bullet specificity and replace generic phrasing with technical decisions, ownership, and measurable outcomes.",
+      "Use the tailoring flow with a job description to align the resume with role-specific keywords.",
+    ],
+    parsedText: resumeText,
+  };
+}
+
 router.post("/summary", async (req, res, next) => {
   try {
     assertResumeData(req.body);
@@ -90,12 +152,23 @@ router.post(
         },
       });
 
-      const parsed = parseJsonFromText<Omit<ResumeReviewResponse, "parsedText">>(
-        extractText(response),
-      );
+      let parsed: Omit<ResumeReviewResponse, "parsedText">;
+
+      try {
+        parsed = parseJsonFromText<Omit<ResumeReviewResponse, "parsedText">>(
+          extractText(response),
+        );
+      } catch (error) {
+        if (error instanceof ApiError) {
+          const fallback = fallbackResumeReview(resumeText);
+          res.json(fallback);
+          return;
+        }
+        throw error;
+      }
 
       const payload: ResumeReviewResponse = {
-        score: Number(parsed.score) || 0,
+        score: clampScore(Number(parsed.score) || 0),
         overview: parsed.overview || "",
         strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
         improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
