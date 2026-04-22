@@ -1,53 +1,31 @@
 import { Router } from "express";
-import type { BulletsResponse, ResumeData, SummaryResponse } from "@resume-builder/shared";
+import multer from "multer";
+import type {
+  BulletsResponse,
+  ExtractedTextResponse,
+  ResumeData,
+  ResumeReviewResponse,
+  SummaryResponse,
+  TailorResumeResponse,
+} from "@resume-builder/shared";
+import { extractText, parseBulletArray, parseJsonFromText } from "../lib/aiParsers.js";
+import { extractTextFromUpload } from "../lib/fileText.js";
 import { getGeminiClient } from "../lib/gemini.js";
 import { ApiError } from "../lib/errors.js";
-import { assertBulletRequest, assertResumeData } from "../lib/validation.js";
+import {
+  assertBulletRequest,
+  assertResumeData,
+  assertTailorResumeRequest,
+} from "../lib/validation.js";
 
 const router = Router();
 const MODEL = "gemini-2.5-flash";
-
-function extractText(response: { text?: string | undefined }) {
-  return response.text?.trim() ?? "";
-}
-
-function stripCodeFences(text: string) {
-  return text
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-}
-
-function parseBulletArray(text: string, originals: string[]) {
-  const normalized = stripCodeFences(text);
-  const jsonMatch = normalized.match(/\[[\s\S]*\]/);
-
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed
-          .map((item) => (typeof item === "string" ? item.trim() : ""))
-          .filter(Boolean)
-          .slice(0, originals.length);
-      }
-    } catch {
-      // Fall through to the line-based parser below.
-    }
-  }
-
-  return normalized
-    .split("\n")
-    .map((line: string) =>
-      line
-        .replace(/^```(?:json)?$/i, "")
-        .replace(/^[[\],"]+$/, "")
-        .replace(/^\s*(?:[-*•]|\d+[\).\s-])\s*/, "")
-        .trim(),
-    )
-    .filter(Boolean)
-    .slice(0, originals.length);
-}
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 8 * 1024 * 1024,
+  },
+});
 
 router.post("/summary", async (req, res, next) => {
   try {
@@ -79,6 +57,62 @@ router.post("/summary", async (req, res, next) => {
   }
 });
 
+router.post("/extract-text", upload.single("file"), async (req, res, next) => {
+  try {
+    const text = await extractTextFromUpload(req.file);
+    const payload: ExtractedTextResponse = {
+      fileName: req.file?.originalname ?? "upload",
+      mimeType: req.file?.mimetype ?? "application/octet-stream",
+      text,
+    };
+    res.json(payload);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post(
+  "/review-upload",
+  upload.single("resume"),
+  async (req, res, next) => {
+    try {
+      const resumeText = await extractTextFromUpload(req.file);
+      const client = getGeminiClient();
+
+      const response = await client.models.generateContent({
+        model: MODEL,
+        contents: `Uploaded resume text:\n${resumeText}`,
+        config: {
+          maxOutputTokens: 1800,
+          temperature: 0.2,
+          systemInstruction:
+            'You are an ATS and resume reviewer for mid-level software engineers applying to top-tier tech companies. Analyze the uploaded resume text and return only valid JSON with this exact shape: {"score": number, "overview": string, "strengths": string[], "improvements": string[], "keywordGaps": string[], "sectionFeedback": string[]}. Score should be 0-100 and reflect ATS readiness, specificity, metrics, structure, and technical depth. Keep feedback specific and actionable.',
+        },
+      });
+
+      const parsed = parseJsonFromText<Omit<ResumeReviewResponse, "parsedText">>(
+        extractText(response),
+      );
+
+      const payload: ResumeReviewResponse = {
+        score: Number(parsed.score) || 0,
+        overview: parsed.overview || "",
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : [],
+        improvements: Array.isArray(parsed.improvements) ? parsed.improvements : [],
+        keywordGaps: Array.isArray(parsed.keywordGaps) ? parsed.keywordGaps : [],
+        sectionFeedback: Array.isArray(parsed.sectionFeedback)
+          ? parsed.sectionFeedback
+          : [],
+        parsedText: resumeText,
+      };
+
+      res.json(payload);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
 router.post("/bullets", async (req, res, next) => {
   try {
     assertBulletRequest(req.body);
@@ -108,6 +142,62 @@ router.post("/bullets", async (req, res, next) => {
     const payload: BulletsResponse = {
       bullets: bullets.map((bullet, index) => parsed[index] || bullet),
     };
+    res.json(payload);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/tailor-resume", async (req, res, next) => {
+  try {
+    assertTailorResumeRequest(req.body);
+    const { resume, jobDescription } = req.body;
+    const client = getGeminiClient();
+
+    const response = await client.models.generateContent({
+      model: MODEL,
+      contents: `Job description:\n${jobDescription}\n\nCurrent resume data:\n${JSON.stringify(
+        resume,
+        null,
+        2,
+      )}`,
+      config: {
+        maxOutputTokens: 2800,
+        temperature: 0.35,
+        systemInstruction:
+          'You are an expert resume writer for FAANG-level software engineering roles. Tailor the provided resume to the supplied job description while preserving factual accuracy. Return only valid JSON with this exact shape: {"matchScore": number, "summary": string, "recommendedKeywords": string[], "notes": string[], "experience": [{"id": string, "bullets": string[]}], "projects": [{"id": string, "bullets": string[]}]} . Rewrite summary and bullets to better match the job description, but do not invent technologies, metrics, or accomplishments. Keep bullet counts aligned to the original entries.',
+      },
+    });
+
+    const parsed = parseJsonFromText<TailorResumeResponse>(extractText(response));
+    const experience = Array.isArray(parsed.experience) ? parsed.experience : [];
+    const projects = Array.isArray(parsed.projects) ? parsed.projects : [];
+
+    const payload: TailorResumeResponse = {
+      matchScore: Number(parsed.matchScore) || 0,
+      summary: parsed.summary || resume.summary,
+      recommendedKeywords: Array.isArray(parsed.recommendedKeywords)
+        ? parsed.recommendedKeywords
+        : [],
+      notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+      experience: resume.experience.map((item) => {
+        const match = experience.find((entry) => entry.id === item.id);
+        return {
+          id: item.id,
+          bullets:
+            match?.bullets?.slice(0, item.bullets.length).filter(Boolean) ?? item.bullets,
+        };
+      }),
+      projects: resume.projects.map((item) => {
+        const match = projects.find((entry) => entry.id === item.id);
+        return {
+          id: item.id,
+          bullets:
+            match?.bullets?.slice(0, item.bullets.length).filter(Boolean) ?? item.bullets,
+        };
+      }),
+    };
+
     res.json(payload);
   } catch (error) {
     next(error);

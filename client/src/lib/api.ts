@@ -2,8 +2,12 @@ import { saveAs } from "file-saver";
 import type {
   BulletEnhanceRequest,
   BulletsResponse,
+  ExtractedTextResponse,
   ResumeData,
+  ResumeReviewResponse,
   SummaryResponse,
+  TailorResumeRequest,
+  TailorResumeResponse,
 } from "../types/shared";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
@@ -78,4 +82,40 @@ export async function downloadResume(payload: ResumeData, format: "docx" | "pdf"
       .replace(/[^a-z0-9]+/g, "_")
       .replace(/^_+|_+$/g, "") || "resume";
   saveAs(blob, `${fileNameBase}_resume.${format}`);
+}
+
+export async function extractTextFromFile(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(getApiUrl("/api/ai/extract-text"), {
+    method: "POST",
+    body: formData,
+  });
+
+  return parseResponse<ExtractedTextResponse>(response);
+}
+
+export async function reviewUploadedResume(file: File) {
+  const formData = new FormData();
+  formData.append("resume", file);
+
+  const response = await fetch(getApiUrl("/api/ai/review-upload"), {
+    method: "POST",
+    body: formData,
+  });
+
+  return parseResponse<ResumeReviewResponse>(response);
+}
+
+export async function tailorResume(payload: TailorResumeRequest) {
+  const response = await fetch(getApiUrl("/api/ai/tailor-resume"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return parseResponse<TailorResumeResponse>(response);
 }

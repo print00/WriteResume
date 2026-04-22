@@ -100,8 +100,11 @@ This repo includes [render.yaml](/Users/shushilkarki/My-projects/WriteResume/ren
 ## Features
 
 - 7-step wizard form with progress tracking and responsive dark UI
+- Resume upload review lab for PDF, DOCX, and TXT files
 - AI-generated summary via `POST /api/ai/summary` using Gemini
 - AI-enhanced work/project bullets via `POST /api/ai/bullets` using Gemini
+- AI resume review with ATS-style scoring, strengths, improvement areas, and keyword gaps
+- Job-description tailoring workflow that can rewrite the current builder summary and bullets
 - ATS checklist and score calculated client-side
 - DOCX export via `POST /api/generate/docx`
 - PDF export via `POST /api/generate/pdf` using headless LibreOffice

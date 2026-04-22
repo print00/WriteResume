@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import type { ResumeFormData } from "./types/form";
+import type { ResumeReviewResponse, TailorResumeResponse } from "./types/shared";
 import {
   defaultValues,
   normalizeResumeFormData,
@@ -14,7 +15,14 @@ import {
   cleanText,
 } from "./lib/defaults";
 import { getAtsScore } from "./lib/ats";
-import { downloadResume, enhanceBullets, generateSummary } from "./lib/api";
+import {
+  downloadResume,
+  enhanceBullets,
+  extractTextFromFile,
+  generateSummary,
+  reviewUploadedResume,
+  tailorResume,
+} from "./lib/api";
 import Button from "./components/Button";
 import FormField from "./components/FormField";
 import InlineErrorBanner from "./components/InlineErrorBanner";
@@ -74,6 +82,14 @@ export default function App() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [bulletLoadingKey, setBulletLoadingKey] = useState<string | null>(null);
   const [exportState, setExportState] = useState<ExportState>("idle");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [jobFileName, setJobFileName] = useState<string>("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [jobExtractLoading, setJobExtractLoading] = useState(false);
+  const [tailorLoading, setTailorLoading] = useState(false);
+  const [resumeReview, setResumeReview] = useState<ResumeReviewResponse | null>(null);
+  const [tailoredResume, setTailoredResume] = useState<TailorResumeResponse | null>(null);
 
   const safeValues = useMemo(
     () => normalizeResumeFormData(values as Partial<ResumeFormData> | undefined),
@@ -134,6 +150,86 @@ export default function App() {
     }
   }
 
+  async function handleReviewResume() {
+    if (!resumeFile) {
+      setErrorMessage("Upload a resume file first.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setReviewLoading(true);
+
+    try {
+      const response = await reviewUploadedResume(resumeFile);
+      setResumeReview(response);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to review resume.");
+    } finally {
+      setReviewLoading(false);
+    }
+  }
+
+  async function handleExtractJobFile(file: File) {
+    setErrorMessage(null);
+    setJobExtractLoading(true);
+
+    try {
+      const response = await extractTextFromFile(file);
+      setJobDescription(response.text);
+      setJobFileName(response.fileName);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to extract the job description.",
+      );
+    } finally {
+      setJobExtractLoading(false);
+    }
+  }
+
+  async function handleTailorResume() {
+    if (!cleanText(jobDescription)) {
+      setErrorMessage("Add or upload a job description before tailoring the resume.");
+      return;
+    }
+
+    setErrorMessage(null);
+    setTailorLoading(true);
+
+    try {
+      const response = await tailorResume({
+        jobDescription,
+        resume: toResumePayload(getValues()),
+      });
+      setTailoredResume(response);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to tailor resume.");
+    } finally {
+      setTailorLoading(false);
+    }
+  }
+
+  function applyTailoredSuggestions() {
+    if (!tailoredResume) {
+      return;
+    }
+
+    setValue("summary", tailoredResume.summary, { shouldDirty: true });
+    tailoredResume.experience.forEach((entry) => {
+      const index = safeValues.experience.findIndex((item) => item.id === entry.id);
+      if (index >= 0) {
+        setValue(`experience.${index}.bullets`, entry.bullets, { shouldDirty: true });
+      }
+    });
+    tailoredResume.projects.forEach((entry) => {
+      const index = safeValues.projects.findIndex((item) => item.id === entry.id);
+      if (index >= 0) {
+        setValue(`projects.${index}.bullets`, entry.bullets, { shouldDirty: true });
+      }
+    });
+    setCurrentStep(1);
+    setMaxVisitedStep((current) => Math.max(current, 5));
+  }
+
   function goNext() {
     setCurrentStep((step) => {
       const next = Math.min(step + 1, steps.length - 1);
@@ -182,6 +278,168 @@ export default function App() {
         />
 
         <InlineErrorBanner message={errorMessage} />
+
+        <SectionCard
+          title="Resume Review Lab"
+          subtitle="Upload an existing resume to score it, then add a job description to tailor the current builder output."
+        >
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                <div className="text-sm font-semibold text-white">1. Upload Resume</div>
+                <p className="mt-1 text-sm text-slate-400">
+                  Supports PDF, DOCX, or TXT for AI review and ATS scoring.
+                </p>
+                <input
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  className="mt-4 block w-full text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:font-semibold file:text-ink"
+                  onChange={(event) => {
+                    setResumeReview(null);
+                    setResumeFile(event.target.files?.[0] ?? null);
+                  }}
+                />
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button type="button" loading={reviewLoading} onClick={handleReviewResume}>
+                    Analyze Uploaded Resume
+                  </Button>
+                  {resumeFile ? (
+                    <span className="self-center text-sm text-slate-400">{resumeFile.name}</span>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                <div className="text-sm font-semibold text-white">2. Add Job Description</div>
+                <p className="mt-1 text-sm text-slate-400">
+                  Paste the role description or upload a PDF, DOCX, or TXT file.
+                </p>
+                <textarea
+                  rows={8}
+                  value={jobDescription}
+                  onChange={(event) => setJobDescription(event.target.value)}
+                  className="mt-4 w-full rounded-xl border border-line bg-slate-950/50 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent focus:ring-2 focus:ring-accent/30"
+                  placeholder="Paste the target software engineer job description here..."
+                />
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt"
+                    className="block text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-panel file:px-4 file:py-2 file:font-semibold file:text-slate-100"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) {
+                        void handleExtractJobFile(file);
+                      }
+                    }}
+                  />
+                  {jobExtractLoading ? <span className="text-sm text-slate-400">Reading file...</span> : null}
+                  {jobFileName ? <span className="text-sm text-slate-400">{jobFileName}</span> : null}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button type="button" variant="secondary" loading={tailorLoading} onClick={handleTailorResume}>
+                    Tailor Current Resume To Job
+                  </Button>
+                  {tailoredResume ? (
+                    <Button type="button" onClick={applyTailoredSuggestions}>
+                      Apply Tailored Suggestions
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {resumeReview ? (
+                <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Uploaded Resume Score</div>
+                      <p className="mt-1 text-sm text-slate-400">{resumeReview.overview}</p>
+                    </div>
+                    <div className="text-4xl font-semibold text-accent">{resumeReview.score}</div>
+                  </div>
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Strengths</div>
+                      <ul className="mt-2 space-y-2 text-sm text-slate-300">
+                        {resumeReview.strengths.map((item) => (
+                          <li key={item}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">Improvements</div>
+                      <ul className="mt-2 space-y-2 text-sm text-slate-300">
+                        {resumeReview.improvements.map((item) => (
+                          <li key={item}>• {item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-5">
+                    <div className="text-sm font-semibold text-white">Keyword Gaps</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {resumeReview.keywordGaps.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full border border-warn/40 bg-warn/10 px-3 py-1 text-xs text-warn"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-line bg-slate-950/20 p-6 text-sm text-slate-400">
+                  Upload a resume to get an AI score, strengths, improvement areas, and keyword gaps.
+                </div>
+              )}
+
+              {tailoredResume ? (
+                <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Job Match Analysis</div>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Tailored summary and bullet suggestions are ready to apply.
+                      </p>
+                    </div>
+                    <div className="text-4xl font-semibold text-success">{tailoredResume.matchScore}</div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-sm font-semibold text-white">Suggested Summary</div>
+                    <p className="mt-2 rounded-2xl border border-line bg-panel/70 p-4 text-sm leading-6 text-slate-200">
+                      {tailoredResume.summary}
+                    </p>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-sm font-semibold text-white">Recommended Keywords</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {tailoredResume.recommendedKeywords.map((item) => (
+                        <span
+                          key={item}
+                          className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs text-accent"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-sm font-semibold text-white">Tailoring Notes</div>
+                    <ul className="mt-2 space-y-2 text-sm text-slate-300">
+                      {tailoredResume.notes.map((item) => (
+                        <li key={item}>• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </SectionCard>
 
         <div className="animate-fade-slide">
           {currentStep === 0 ? (

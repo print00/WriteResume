@@ -56,3 +56,38 @@ export interface SummaryResponse {
 export interface BulletsResponse {
   bullets: string[];
 }
+
+export interface ExtractedTextResponse {
+  fileName: string;
+  mimeType: string;
+  text: string;
+}
+
+export interface ResumeReviewResponse {
+  score: number;
+  overview: string;
+  strengths: string[];
+  improvements: string[];
+  keywordGaps: string[];
+  sectionFeedback: string[];
+  parsedText: string;
+}
+
+export interface TailorResumeRequest {
+  jobDescription: string;
+  resume: ResumeData;
+}
+
+export interface TailoredSectionBullets {
+  id: string;
+  bullets: string[];
+}
+
+export interface TailorResumeResponse {
+  matchScore: number;
+  summary: string;
+  recommendedKeywords: string[];
+  notes: string[];
+  experience: TailoredSectionBullets[];
+  projects: TailoredSectionBullets[];
+}

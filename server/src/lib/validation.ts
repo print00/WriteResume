@@ -1,4 +1,8 @@
-import type { BulletEnhanceRequest, ResumeData } from "@resume-builder/shared";
+import type {
+  BulletEnhanceRequest,
+  ResumeData,
+  TailorResumeRequest,
+} from "@resume-builder/shared";
 import { ApiError } from "./errors.js";
 
 export function assertResumeData(value: unknown): asserts value is ResumeData {
@@ -35,4 +39,20 @@ export function assertBulletRequest(value: unknown): asserts value is BulletEnha
   if (!Array.isArray(payload.bullets) || typeof payload.context !== "string") {
     throw new ApiError(400, "Bullets and context are required.");
   }
+}
+
+export function assertTailorResumeRequest(
+  value: unknown,
+): asserts value is TailorResumeRequest {
+  if (!value || typeof value !== "object") {
+    throw new ApiError(400, "A valid tailoring payload is required.");
+  }
+
+  const payload = value as TailorResumeRequest;
+
+  if (typeof payload.jobDescription !== "string" || !payload.jobDescription.trim()) {
+    throw new ApiError(400, "A job description is required.");
+  }
+
+  assertResumeData(payload.resume);
 }
