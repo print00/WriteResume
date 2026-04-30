@@ -9,13 +9,13 @@ export default function BrandLogo({ className = "", compact = false }: BrandLogo
       <img
         src="/Logo.png"
         alt="WriteResume logo"
-        className={`${compact ? "h-12 w-12" : "h-16 w-16"} rounded-xl object-contain`}
+        className={`${compact ? "h-11 w-11" : "h-14 w-14"} rounded-lg border border-white/10 bg-white/[0.03] object-contain shadow-lift`}
       />
 
       <div className="min-w-0">
         <div
-          className={`bg-gradient-to-r from-[#1c4a8f] via-[#1288b7] to-[#13c9bf] bg-clip-text font-semibold tracking-tight text-transparent ${
-            compact ? "text-2xl" : "text-4xl"
+          className={`bg-gradient-to-r from-white via-accentSoft to-gold bg-clip-text font-semibold tracking-tight text-transparent ${
+            compact ? "text-2xl" : "text-4xl md:text-5xl"
           }`}
         >
           WriteResume

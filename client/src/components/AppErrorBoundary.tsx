@@ -32,7 +32,7 @@ export default class AppErrorBoundary extends Component<
     if (this.state.hasError) {
       return (
         <main className="flex min-h-screen items-center justify-center px-6 text-slate-100">
-          <div className="max-w-xl rounded-3xl border border-danger/40 bg-panel/90 p-8 shadow-glow">
+          <div className="surface max-w-xl rounded-lg border-danger/40 p-8">
             <h1 className="text-2xl font-semibold text-white">Something went wrong</h1>
             <p className="mt-3 text-sm leading-6 text-slate-300">
               The app hit an unexpected error while rendering the form. Refresh the
@@ -40,7 +40,7 @@ export default class AppErrorBoundary extends Component<
               show the exact crash.
             </p>
             {this.state.errorMessage ? (
-              <pre className="mt-4 overflow-x-auto rounded-2xl border border-line bg-slate-950/70 p-4 text-xs text-rose-200">
+              <pre className="mt-4 overflow-x-auto rounded-lg border border-white/10 bg-black/30 p-4 text-xs text-rose-200">
                 {this.state.errorMessage}
               </pre>
             ) : null}

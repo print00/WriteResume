@@ -4,7 +4,7 @@ export default function InlineErrorBanner({ message }: { message: string | null 
   }
 
   return (
-    <div className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-rose-100">
+    <div className="rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-sm text-rose-100 shadow-lift">
       {message}
     </div>
   );

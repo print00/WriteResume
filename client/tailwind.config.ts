@@ -6,17 +6,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0b1220",
-        panel: "#121a2b",
-        line: "#27324a",
-        accent: "#62c4ff",
-        success: "#31c48d",
-        warn: "#f4c95d",
-        danger: "#f97066",
-        navy: "#1a1a2e",
+        ink: "#070b12",
+        panel: "#111827",
+        line: "#2b3547",
+        accent: "#14b8a6",
+        accentSoft: "#8bd8cf",
+        gold: "#f59e0b",
+        success: "#34d399",
+        warn: "#fbbf24",
+        danger: "#fb7185",
+        navy: "#111827",
       },
       boxShadow: {
-        glow: "0 0 0 1px rgba(98, 196, 255, 0.15), 0 22px 60px rgba(5, 10, 20, 0.35)",
+        glow: "0 0 0 1px rgba(20, 184, 166, 0.2), 0 22px 70px rgba(0, 0, 0, 0.38)",
+        lift: "0 18px 50px rgba(0, 0, 0, 0.28)",
       },
       keyframes: {
         "fade-slide": {

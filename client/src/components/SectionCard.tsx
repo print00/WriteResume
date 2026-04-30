@@ -6,8 +6,8 @@ export default function SectionCard({
   children,
 }: PropsWithChildren<{ title: string; subtitle?: string }>) {
   return (
-    <section className="rounded-3xl border border-line bg-panel/85 p-5 shadow-glow backdrop-blur">
-      <div className="mb-5">
+    <section className="surface rounded-lg p-5">
+      <div className="mb-5 border-b border-white/10 pb-4">
         <h2 className="text-lg font-semibold text-white">{title}</h2>
         {subtitle ? <p className="mt-1 text-sm text-slate-400">{subtitle}</p> : null}
       </div>

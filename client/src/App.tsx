@@ -245,27 +245,56 @@ export default function App() {
   const currentSummaryLength = safeValues.summary?.length ?? 0;
   const watchedExperience = safeValues.experience ?? [];
   const watchedProjects = safeValues.projects ?? [];
+  const completedSteps = maxVisitedStep + 1;
+  const resumeSections =
+    safeValues.experience.length +
+    safeValues.education.length +
+    safeValues.skills.length +
+    safeValues.projects.length +
+    safeValues.certifications.length;
 
   return (
-    <main className="min-h-screen px-4 py-8 text-slate-100 md:px-8">
+    <main className="min-h-screen px-4 py-6 text-slate-100 md:px-8 md:py-8">
       <form
-        className="mx-auto max-w-6xl space-y-6"
+        className="mx-auto max-w-7xl space-y-6"
         onSubmit={(event) => {
           event.preventDefault();
         }}
       >
-        <header className="space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
+        <header className="surface overflow-hidden rounded-lg">
+          <div className="grid gap-6 p-5 lg:grid-cols-[1fr_360px] lg:p-7">
+            <div className="flex min-w-0 flex-col justify-between gap-8">
               <BrandLogo />
-              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white">Build a FAANG-ready resume</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                Structured drafting, AI-assisted polish, and export to ATS-friendly DOCX or PDF in one pass.
-              </p>
+              <div>
+                <div className="mb-3 inline-flex rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-accentSoft">
+                  Resume intelligence workspace
+                </div>
+                <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-white md:text-6xl">
+                  Build a sharper, recruiter-ready resume.
+                </h1>
+                <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">
+                  Draft structured sections, tune bullets with AI, match a job description, and export an ATS-friendly resume from one focused workspace.
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-line bg-panel/70 px-4 py-3">
-              <div className="text-xs uppercase tracking-[0.2em] text-slate-500">Current Step</div>
-              <div className="mt-1 text-lg font-semibold text-white">{steps[currentStep]}</div>
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="surface-muted rounded-lg p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Current Step</div>
+                <div className="mt-2 text-2xl font-semibold text-white">{steps[currentStep]}</div>
+                <div className="mt-1 text-sm text-slate-400">
+                  {currentStep + 1} of {steps.length}
+                </div>
+              </div>
+              <div className="surface-muted rounded-lg p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Unlocked</div>
+                <div className="mt-2 text-2xl font-semibold text-accentSoft">{completedSteps}</div>
+                <div className="mt-1 text-sm text-slate-400">Sections in progress</div>
+              </div>
+              <div className="surface-muted rounded-lg p-4">
+                <div className="text-xs uppercase tracking-[0.18em] text-slate-500">Entries</div>
+                <div className="mt-2 text-2xl font-semibold text-gold">{resumeSections}</div>
+                <div className="mt-1 text-sm text-slate-400">Resume data blocks</div>
+              </div>
             </div>
           </div>
         </header>
@@ -285,7 +314,7 @@ export default function App() {
         >
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-4">
-              <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+              <div className="surface-muted rounded-lg p-4">
                 <div className="text-sm font-semibold text-white">1. Upload Resume</div>
                 <p className="mt-1 text-sm text-slate-400">
                   Supports PDF, DOCX, or TXT for AI review and ATS scoring.
@@ -293,7 +322,7 @@ export default function App() {
                 <input
                   type="file"
                   accept=".pdf,.docx,.txt"
-                  className="mt-4 block w-full text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:font-semibold file:text-ink"
+                  className="mt-4 block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-accent file:px-4 file:py-2 file:font-semibold file:text-ink"
                   onChange={(event) => {
                     setResumeReview(null);
                     setResumeFile(event.target.files?.[0] ?? null);
@@ -309,7 +338,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+              <div className="surface-muted rounded-lg p-4">
                 <div className="text-sm font-semibold text-white">2. Add Job Description</div>
                 <p className="mt-1 text-sm text-slate-400">
                   Paste the role description or upload a PDF, DOCX, or TXT file.
@@ -318,14 +347,14 @@ export default function App() {
                   rows={8}
                   value={jobDescription}
                   onChange={(event) => setJobDescription(event.target.value)}
-                  className="mt-4 w-full rounded-xl border border-line bg-slate-950/50 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-accent focus:ring-2 focus:ring-accent/30"
+                  className="field-shell mt-4 w-full rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 transition focus:border-accent focus:ring-2 focus:ring-accent/30"
                   placeholder="Paste the target software engineer job description here..."
                 />
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <input
                     type="file"
                     accept=".pdf,.docx,.txt"
-                    className="block text-sm text-slate-300 file:mr-4 file:rounded-xl file:border-0 file:bg-panel file:px-4 file:py-2 file:font-semibold file:text-slate-100"
+                    className="block text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:font-semibold file:text-slate-100"
                     onChange={(event) => {
                       const file = event.target.files?.[0];
                       if (file) {
@@ -351,7 +380,7 @@ export default function App() {
 
             <div className="space-y-4">
               {resumeReview ? (
-                <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                <div className="surface-muted rounded-lg p-4">
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <div className="text-sm font-semibold text-white">Uploaded Resume Score</div>
@@ -392,13 +421,13 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-line bg-slate-950/20 p-6 text-sm text-slate-400">
+                <div className="rounded-lg border border-dashed border-white/15 bg-white/[0.03] p-6 text-sm text-slate-400">
                   Upload a resume to get an AI score, strengths, improvement areas, and keyword gaps.
                 </div>
               )}
 
               {tailoredResume ? (
-                <div className="rounded-2xl border border-line bg-slate-950/40 p-4">
+                <div className="surface-muted rounded-lg p-4">
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <div className="text-sm font-semibold text-white">Job Match Analysis</div>
@@ -410,7 +439,7 @@ export default function App() {
                   </div>
                   <div className="mt-4">
                     <div className="text-sm font-semibold text-white">Suggested Summary</div>
-                    <p className="mt-2 rounded-2xl border border-line bg-panel/70 p-4 text-sm leading-6 text-slate-200">
+                    <p className="mt-2 rounded-lg border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-slate-200">
                       {tailoredResume.summary}
                     </p>
                   </div>
@@ -736,7 +765,7 @@ export default function App() {
           {currentStep === 6 ? (
             <SectionCard title="Export & ATS Score" subtitle="Use the checklist below to tighten the resume before exporting.">
               <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-                <div className="rounded-3xl border border-line bg-slate-950/50 p-5">
+                <div className="surface-muted rounded-lg p-5">
                   <div className="text-xs uppercase tracking-[0.24em] text-slate-500">ATS Score</div>
                   <div className={`mt-3 text-6xl font-semibold ${scoreTone}`}>{score}</div>
                   <div className={`mt-2 text-sm ${scoreTone}`}>
@@ -768,7 +797,7 @@ export default function App() {
                   {checklist.map((item) => (
                     <div
                       key={item.label}
-                      className="flex items-center justify-between rounded-2xl border border-line bg-slate-950/40 px-4 py-3"
+                      className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3"
                     >
                       <div>
                         <div className="text-sm font-medium text-slate-100">{item.label}</div>
