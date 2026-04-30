@@ -1,5 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
+import { Type } from "@google/genai";
 import type {
   BulletsResponse,
   ExtractedTextResponse,
@@ -88,6 +89,100 @@ function fallbackResumeReview(resumeText: string): ResumeReviewResponse {
     parsedText: resumeText,
   };
 }
+
+const commonSkillWords = new Set([
+  "and",
+  "are",
+  "for",
+  "from",
+  "job",
+  "the",
+  "that",
+  "this",
+  "with",
+  "will",
+  "you",
+  "your",
+]);
+
+function extractRecommendedKeywords(jobDescription: string) {
+  const matches = jobDescription
+    .match(/\b[A-Za-z][A-Za-z+#.-]{2,}\b/g)
+    ?.map((word) => word.trim())
+    .filter((word) => !commonSkillWords.has(word.toLowerCase())) ?? [];
+  const unique = [...new Map(matches.map((word) => [word.toLowerCase(), word])).values()];
+
+  return unique.slice(0, 12);
+}
+
+function fallbackTailoredResume(
+  resume: ResumeData,
+  jobDescription: string,
+): TailorResumeResponse {
+  const recommendedKeywords = extractRecommendedKeywords(jobDescription);
+  const roleSignals = recommendedKeywords.slice(0, 5).join(", ");
+  const currentTitle =
+    resume.experience.find((item) => item.title.trim())?.title.trim() ||
+    "software engineering";
+
+  return {
+    matchScore: recommendedKeywords.length > 0 ? 62 : 50,
+    summary:
+      resume.summary ||
+      `Results-focused ${currentTitle} candidate with experience aligned to the target role${roleSignals ? ` across ${roleSignals}` : ""}.`,
+    recommendedKeywords,
+    notes: [
+      "The AI response could not be parsed as JSON, so this conservative fallback preserved the current resume content.",
+      "Review the recommended keywords and weave only the accurate ones into the summary, skills, and achievement bullets.",
+      "Add measurable impact to bullets before export so the tailored version reads as specific rather than keyword-only.",
+    ],
+    experience: resume.experience.map((item) => ({
+      id: item.id,
+      bullets: item.bullets,
+    })),
+    projects: resume.projects.map((item) => ({
+      id: item.id,
+      bullets: item.bullets,
+    })),
+  };
+}
+
+const tailoredBulletSectionSchema = {
+  type: Type.OBJECT,
+  properties: {
+    id: { type: Type.STRING },
+    bullets: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+  },
+  required: ["id", "bullets"],
+};
+
+const tailorResumeResponseSchema = {
+  type: Type.OBJECT,
+  properties: {
+    matchScore: { type: Type.NUMBER },
+    summary: { type: Type.STRING },
+    recommendedKeywords: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    notes: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+    },
+    experience: {
+      type: Type.ARRAY,
+      items: tailoredBulletSectionSchema,
+    },
+    projects: {
+      type: Type.ARRAY,
+      items: tailoredBulletSectionSchema,
+    },
+  },
+  required: ["matchScore", "summary", "recommendedKeywords", "notes", "experience", "projects"],
+};
 
 router.post("/summary", async (req, res, next) => {
   try {
@@ -237,12 +332,26 @@ router.post("/tailor-resume", async (req, res, next) => {
       config: {
         maxOutputTokens: 2800,
         temperature: 0.35,
+        responseMimeType: "application/json",
+        responseSchema: tailorResumeResponseSchema,
         systemInstruction:
-          'You are an expert resume writer for FAANG-level software engineering roles. Tailor the provided resume to the supplied job description while preserving factual accuracy. Return only valid JSON with this exact shape: {"matchScore": number, "summary": string, "recommendedKeywords": string[], "notes": string[], "experience": [{"id": string, "bullets": string[]}], "projects": [{"id": string, "bullets": string[]}]} . Rewrite summary and bullets to better match the job description, but do not invent technologies, metrics, or accomplishments. Keep bullet counts aligned to the original entries.',
+          'You are an expert resume writer for FAANG-level software engineering roles. Tailor the provided resume to the supplied job description while preserving factual accuracy. Return JSON only. Rewrite summary and bullets to better match the job description, but do not invent technologies, metrics, or accomplishments. Keep bullet counts aligned to the original entries. Every experience and project item must use the same id from the input.',
       },
     });
 
-    const parsed = parseJsonFromText<TailorResumeResponse>(extractText(response));
+    let parsed: TailorResumeResponse;
+
+    try {
+      parsed = parseJsonFromText<TailorResumeResponse>(extractText(response));
+    } catch (error) {
+      if (error instanceof ApiError) {
+        res.json(fallbackTailoredResume(resume, jobDescription));
+        return;
+      }
+
+      throw error;
+    }
+
     const experience = Array.isArray(parsed.experience) ? parsed.experience : [];
     const projects = Array.isArray(parsed.projects) ? parsed.projects : [];
 
