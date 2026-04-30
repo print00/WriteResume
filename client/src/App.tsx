@@ -88,6 +88,7 @@ export default function App() {
   const [reviewLoading, setReviewLoading] = useState(false);
   const [jobExtractLoading, setJobExtractLoading] = useState(false);
   const [tailorLoading, setTailorLoading] = useState(false);
+  const [tailorErrorMessage, setTailorErrorMessage] = useState<string | null>(null);
   const [resumeReview, setResumeReview] = useState<ResumeReviewResponse | null>(null);
   const [tailoredResume, setTailoredResume] = useState<TailorResumeResponse | null>(null);
 
@@ -187,8 +188,12 @@ export default function App() {
   }
 
   async function handleTailorResume() {
+    setTailorErrorMessage(null);
+
     if (!cleanText(jobDescription)) {
-      setErrorMessage("Add or upload a job description before tailoring the resume.");
+      const message = "Add or upload a job description before tailoring the resume.";
+      setErrorMessage(message);
+      setTailorErrorMessage(message);
       return;
     }
 
@@ -202,7 +207,9 @@ export default function App() {
       });
       setTailoredResume(response);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to tailor resume.");
+      const message = error instanceof Error ? error.message : "Unable to tailor resume.";
+      setErrorMessage(message);
+      setTailorErrorMessage(message);
     } finally {
       setTailorLoading(false);
     }
@@ -375,6 +382,9 @@ export default function App() {
                     </Button>
                   ) : null}
                 </div>
+                {tailorErrorMessage ? (
+                  <p className="mt-3 text-sm text-danger">{tailorErrorMessage}</p>
+                ) : null}
               </div>
             </div>
 

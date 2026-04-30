@@ -54,5 +54,25 @@ export function assertTailorResumeRequest(
     throw new ApiError(400, "A job description is required.");
   }
 
-  assertResumeData(payload.resume);
+  if (!payload.resume || typeof payload.resume !== "object") {
+    throw new ApiError(400, "A valid resume payload is required.");
+  }
+
+  const { resume } = payload;
+
+  if (!resume.contact || typeof resume.contact !== "object") {
+    throw new ApiError(400, "Contact information must be provided.");
+  }
+
+  if (!Array.isArray(resume.experience) || !Array.isArray(resume.education) || !Array.isArray(resume.projects)) {
+    throw new ApiError(400, "Resume sections must be arrays.");
+  }
+
+  if (!resume.skills || typeof resume.skills !== "object") {
+    throw new ApiError(400, "Skills must be provided as a category map.");
+  }
+
+  if (!Array.isArray(resume.certifications)) {
+    throw new ApiError(400, "Certifications must be an array.");
+  }
 }
